@@ -15,7 +15,6 @@ use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg, MinterResponse};
 
 use astroport::querier::{query_supply, query_token_balance};
 use astroport::xastro_token::InstantiateMsg as TokenInstantiateMsg;
-
 /// Contract name that is used for migration.
 const CONTRACT_NAME: &str = "ito-staking";
 /// Contract version that is used for migration.
@@ -30,7 +29,6 @@ const INSTANTIATE_TOKEN_REPLY_ID: u64 = 1;
 
 /// Minimum initial xastro share
 pub(crate) const MINIMUM_STAKE_AMOUNT: Uint128 = Uint128::new(1_000);
-// Bagian 2: Fungsi instantiate dan beberapa fungsi lainnya
 /// Creates a new contract with the specified parameters in the [`InstantiateMsg`].
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -49,7 +47,6 @@ pub fn instantiate(
             xastro_token_addr: Addr::unchecked(""),
         },
     )?;
-
     // Create the xASTRO token
     let sub_msg: Vec<SubMsg> = vec![SubMsg {
         msg: WasmMsg::Instantiate {
@@ -77,7 +74,8 @@ pub fn instantiate(
 
     Ok(Response::new().add_submessages(sub_msg))
 }
-// Bagian 3: Fungsi execute dan reply
+// ... (lanjutan ke Bagian 2)
+
 /// Exposes execute functions available in the contract.
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
@@ -93,7 +91,9 @@ pub fn execute(
         }
     }
 }
+// ... (lanjutan ke Bagian 5)
 
+/// The entry point to the contract for processing replies from submessages.
 /// The entry point to the contract for processing replies from submessages.
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
@@ -113,7 +113,6 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
 
             let init_response = parse_instantiate_response_data(data.as_slice())
                 .map_err(|e| StdError::generic_err(format!("{e}")))?;
-
             config.xastro_token_addr = deps.api.addr_validate(&init_response.contract_address)?;
 
             CONFIG.save(deps.storage, &config)?;
@@ -123,31 +122,29 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
         _ => Err(ContractError::FailedToParseReply {}),
     }
 }
-// Bagian 4: Fungsi update_deposit_token_addr, receive_cw20, query, dan migrate
+
 /// Updates the deposit token address.
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn update_deposit_token_addr(
     deps: DepsMut,
     env: Env,
-    info: MessageInfo,
+    _info: MessageInfo,
     new_deposit_token_addr: String,
 ) -> StdResult<Response> {
     let mut config = CONFIG.load(deps.storage)?;
 
     // Only the owner is allowed to update the deposit token address
-    if config.owner != info.sender {
+    if config.owner != env.message.sender {
         return Err(ContractError::Unauthorized {});
     }
 
-    config.astro_token_addr = deps.api.addr_validate(&new_deposit_token_addr)?;
+    config.deposit_token_addr = deps.api.addr_validate(&new_deposit_token_addr)?;
 
     CONFIG.save(deps.storage, &config)?;
 
     Ok(Response::new())
 }
-
-// ... (Fungsi lainnya seperti receive_cw20, query, migrate)
-// ... (lanjutan dari Bagian 4)
+// ... (lanjutan ke Bagian 7)
 
 /// Receives a message of type [`Cw20ReceiveMsg`] and processes it depending on the received template.
 ///
@@ -242,7 +239,6 @@ fn receive_cw20(
             let what = amount
                 .checked_mul(total_deposit)?
                 .checked_div(total_shares)?;
-
             // Burn share
             let res = Response::new()
                 .add_message(CosmosMsg::Wasm(WasmMsg::Execute {
@@ -268,7 +264,6 @@ fn receive_cw20(
         }
     }
 }
-// ... (lanjutan dari Bagian 5)
 
 /// Exposes all the queries available in the contract.
 ///
@@ -296,8 +291,6 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         )?),
     }
 }
-// ... (lanjutan dari Bagian 6)
-
 /// ## Description
 /// Used for migration of contract. Returns the default object of type [`Response`].
 /// ## Params
