@@ -78,11 +78,8 @@ pub fn instantiate(
     Ok(Response::new().add_submessages(sub_msg))
 }
 
+// ... (lanjutan ke Bagian 2)
 /// Exposes execute functions available in the contract.
-///
-/// ## Variants
-/// * **ExecuteMsg::Receive(msg)** Receives a message of type [`Cw20ReceiveMsg`] and processes
-/// it depending on the received template.
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
     deps: DepsMut,
@@ -92,6 +89,9 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::Receive(msg) => receive_cw20(deps, env, info, msg),
+        ExecuteMsg::UpdateDepositTokenAddr { new_deposit_token_addr } => {
+            update_deposit_token_addr(deps, env, info, new_deposit_token_addr)
+        }
     }
 }
 
@@ -125,9 +125,8 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
     }
 }
 
-/// Receives a message of type [`Cw20ReceiveMsg`] and processes it depending on the received template.
-///
-/// * **cw20_msg** CW20 message to process.
+// ... (lanjutan ke Bagian 3)
+// Receives a message of type [`Cw20ReceiveMsg`] and processes it depending on the received template.
 fn receive_cw20(
     deps: DepsMut,
     env: Env,
@@ -239,14 +238,8 @@ fn receive_cw20(
     }
 }
 
+// ... (lanjutan ke Bagian 4)
 /// Exposes all the queries available in the contract.
-///
-/// ## Queries
-/// * **QueryMsg::Config {}** Returns the staking contract configuration using a [`ConfigResponse`] object.
-///
-/// * **QueryMsg::TotalShares {}** Returns the total xASTRO supply using a [`Uint128`] object.
-///
-/// * **QueryMsg::Config {}** Returns the amount of ASTRO that's currently in the staking pool using a [`Uint128`] object.
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     let config = CONFIG.load(deps.storage)?;
