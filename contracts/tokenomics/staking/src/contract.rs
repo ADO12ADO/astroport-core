@@ -128,6 +128,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
     }
 }
 /// Updates the deposit token address.
+
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn update_deposit_token_addr(
     deps: DepsMut,
@@ -148,6 +149,8 @@ pub fn update_deposit_token_addr(
 
     Ok(Response::new())
 }
+
+// ... (other parts of your code)
 /// Receives a message of type [`Cw20ReceiveMsg`] and processes it depending on the received template.
 ///
 /// * **cw20_msg** CW20 message to process.
