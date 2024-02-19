@@ -33,10 +33,6 @@ pub(crate) const MINIMUM_STAKE_AMOUNT: Uint128 = Uint128::new(1_000);
 
 // ..// ... (imports)
 
-// ... (constants)
-
-// ... (MINIMUM_STAKE_AMOUNT constant)
-
 // Instantiate function
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -53,13 +49,13 @@ pub fn instantiate(
         &Config {
             astro_token_addr: deps.api.addr_validate(&msg.deposit_token_addr)?,
             xastro_token_addr: Addr::unchecked(""),
-            owner: env.message.sender.clone(),  // Set owner to the contract creator
+            owner: env.message.sender.clone(),
         },
     )?;
 
     // Create the xASTRO token
     let sub_msg = WasmMsg::Instantiate {
-        admin: Some(env.message.sender.clone()), // Use contract creator as admin
+        admin: Some(env.message.sender.clone()),
         code_id: msg.token_code_id,
         msg: to_json_binary(&TokenInstantiateMsg {
             name: TOKEN_NAME.to_string(),
@@ -73,16 +69,14 @@ pub fn instantiate(
             marketing: msg.marketing,
         })?,
         funds: vec![],
-        label: String::from("Staked Ito Token"),
+        label: String::from("Staked Astroport Token"),
     }
     .into_submsg()
     .id(INSTANTIATE_TOKEN_REPLY_ID)
     .reply_on_success();
 
-    Ok(Response::new().add_submessage(sub_msg))
+    Ok(Response::new().add_submessages(sub_msg).add_attributes(vec![attr("action", "instantiate")]))
 }
-
-// ... (remaining code, unchanged)
 
 // Execute function
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -141,21 +135,12 @@ pub fn update_deposit_token_addr(
         return Err(ContractError::Unauthorized {});
     }
 
-    config.deposit_token_addr = deps.api.addr_validate(&new_deposit_token_addr)?;
+    config.astro_token_addr = deps.api.addr_validate(&new_deposit_token_addr)?;
 
     CONFIG.save(deps.storage, &config)?;
 
     Ok(Response::new())
 }
-
-// ... (receive_cw20 function)
-
-// ... (query function)
-
-// ... (migrate function)
-
-/// Receives a message of type [`Cw20ReceiveMsg`] and processes it depending on the received template.
-///
 /// * **cw20_msg** CW20 message to process.
 fn receive_cw20(
     deps: DepsMut,
