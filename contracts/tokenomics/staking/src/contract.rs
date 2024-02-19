@@ -29,7 +29,13 @@ const INSTANTIATE_TOKEN_REPLY_ID: u64 = 1;
 
 /// Minimum initial xastro share
 pub(crate) const MINIMUM_STAKE_AMOUNT: Uint128 = Uint128::new(1_000);
-/// Creates a new contract with the specified parameters in the [`InstantiateMsg`].
+// ... (imports)
+
+// ... (constants)
+
+// ... (MINIMUM_STAKE_AMOUNT constant)
+
+// Instantiate function
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
@@ -45,38 +51,36 @@ pub fn instantiate(
         &Config {
             astro_token_addr: deps.api.addr_validate(&msg.deposit_token_addr)?,
             xastro_token_addr: Addr::unchecked(""),
+            owner: env.message.sender.clone(),
         },
     )?;
+
     // Create the xASTRO token
-    let sub_msg: Vec<SubMsg> = vec![SubMsg {
-        msg: WasmMsg::Instantiate {
-            admin: Some(msg.owner),
-            code_id: msg.token_code_id,
-            msg: to_json_binary(&TokenInstantiateMsg {
-                name: TOKEN_NAME.to_string(),
-                symbol: TOKEN_SYMBOL.to_string(),
-                decimals: 6,
-                initial_balances: vec![],
-                mint: Some(MinterResponse {
-                    minter: env.contract.address.to_string(),
-                    cap: None,
-                }),
-                marketing: msg.marketing,
-            })?,
-            funds: vec![],
-            label: String::from("Staked Astroport Token"),
-        }
-        .into(),
-        id: INSTANTIATE_TOKEN_REPLY_ID,
-        gas_limit: None,
-        reply_on: ReplyOn::Success,
-    }];
+    let sub_msg = WasmMsg::Instantiate {
+        admin: Some(msg.owner),
+        code_id: msg.token_code_id,
+        msg: to_json_binary(&TokenInstantiateMsg {
+            name: TOKEN_NAME.to_string(),
+            symbol: TOKEN_SYMBOL.to_string(),
+            decimals: 6,
+            initial_balances: vec![],
+            mint: Some(MinterResponse {
+                minter: env.contract.address.to_string(),
+                cap: None,
+            }),
+            marketing: msg.marketing,
+        })?,
+        funds: vec![],
+        label: String::from("Staked Astroport Token"),
+    }
+    .into_submsg()
+    .id(INSTANTIATE_TOKEN_REPLY_ID)
+    .reply_on_success();
 
-    Ok(Response::new().add_submessages(sub_msg))
+    Ok(Response::new().add_submessage(sub_msg))
 }
-// ... (lanjutan ke Bagian 2)
 
-/// Exposes execute functions available in the contract.
+// Execute function
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
     deps: DepsMut,
@@ -91,19 +95,14 @@ pub fn execute(
         }
     }
 }
-// ... (lanjutan ke Bagian 5)
 
-/// The entry point to the contract for processing replies from submessages.
-/// The entry point to the contract for processing replies from submessages.
+// Reply function
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
     match msg {
         Reply {
             id: INSTANTIATE_TOKEN_REPLY_ID,
-            result:
-                SubMsgResult::Ok(SubMsgResponse {
-                    data: Some(data), ..
-                }),
+            result: SubMsgResult::Ok(SubMsgResponse { data: Some(data), .. }),
         } => {
             let mut config = CONFIG.load(deps.storage)?;
 
@@ -112,7 +111,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
             }
 
             let init_response = parse_instantiate_response_data(data.as_slice())
-                .map_err(|e| StdError::generic_err(format!("{e}")))?;
+                .map_err(|e| StdError::generic_err(format!("{}", e)))?;
             config.xastro_token_addr = deps.api.addr_validate(&init_response.contract_address)?;
 
             CONFIG.save(deps.storage, &config)?;
@@ -123,7 +122,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
     }
 }
 
-/// Updates the deposit token address.
+// Update deposit token address function
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn update_deposit_token_addr(
     deps: DepsMut,
@@ -144,7 +143,12 @@ pub fn update_deposit_token_addr(
 
     Ok(Response::new())
 }
-// ... (lanjutan ke Bagian 7)
+
+// ... (receive_cw20 function)
+
+// ... (query function)
+
+// ... (migrate function)
 
 /// Receives a message of type [`Cw20ReceiveMsg`] and processes it depending on the received template.
 ///
