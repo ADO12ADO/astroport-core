@@ -95,6 +95,28 @@ pub fn execute(
     }
 }
 
+/// Updates the deposit token address.
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn update_deposit_token_addr(
+    deps: DepsMut,
+    env: Env,
+    _info: MessageInfo,
+    new_deposit_token_addr: String,
+) -> StdResult<Response> {
+    let mut config = CONFIG.load(deps.storage)?;
+
+    // Only the owner is allowed to update the deposit token address
+    if config.owner != env.message.sender {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    config.deposit_token_addr = deps.api.addr_validate(&new_deposit_token_addr)?;
+
+    CONFIG.save(deps.storage, &config)?;
+
+    Ok(Response::new())
+}
+
 /// The entry point to the contract for processing replies from submessages.
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
