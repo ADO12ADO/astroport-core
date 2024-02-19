@@ -8,20 +8,20 @@ pub enum ContractError {
     #[error("{0}")]
     Std(#[from] StdError),
 
-    #[error("Unauthorized")]
-    Unauthorized {},
+    #[error("Unauthorized: Only the contract owner can perform this action")]
+    Unauthorized,
 
     #[error("An error occurred during migration")]
-    MigrationError {},
+    MigrationError,
 
     #[error("Initial stake amount must be more than {}", MINIMUM_STAKE_AMOUNT)]
-    MinimumStakeAmountError {},
+    MinimumStakeAmountError,
 
-    #[error("Insufficient amount of Stake")]
-    StakeAmountTooSmall {},
+    #[error("Insufficient stake amount")]
+    StakeAmountTooSmall,
 
     #[error("Failed to parse or process reply message")]
-    FailedToParseReply {},
+    FailedToParseReply,
 }
 
 impl From<OverflowError> for ContractError {
