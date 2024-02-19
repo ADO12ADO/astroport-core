@@ -31,6 +31,8 @@ const INSTANTIATE_TOKEN_REPLY_ID: u64 = 1;
 pub(crate) const MINIMUM_STAKE_AMOUNT: Uint128 = Uint128::new(1_000);
 // ... (imports)
 
+// ..// ... (imports)
+
 // ... (constants)
 
 // ... (MINIMUM_STAKE_AMOUNT constant)
@@ -51,13 +53,13 @@ pub fn instantiate(
         &Config {
             astro_token_addr: deps.api.addr_validate(&msg.deposit_token_addr)?,
             xastro_token_addr: Addr::unchecked(""),
-            owner: env.message.sender.clone(),
+            owner: env.message.sender.clone(),  // Set owner to the contract creator
         },
     )?;
 
     // Create the xASTRO token
     let sub_msg = WasmMsg::Instantiate {
-        admin: Some(msg.owner),
+        admin: Some(env.message.sender.clone()), // Use contract creator as admin
         code_id: msg.token_code_id,
         msg: to_json_binary(&TokenInstantiateMsg {
             name: TOKEN_NAME.to_string(),
@@ -71,7 +73,7 @@ pub fn instantiate(
             marketing: msg.marketing,
         })?,
         funds: vec![],
-        label: String::from("Staked Astroport Token"),
+        label: String::from("ITO Staked"),
     }
     .into_submsg()
     .id(INSTANTIATE_TOKEN_REPLY_ID)
@@ -79,6 +81,8 @@ pub fn instantiate(
 
     Ok(Response::new().add_submessage(sub_msg))
 }
+
+// ... (remaining code, unchanged)
 
 // Execute function
 #[cfg_attr(not(feature = "library"), entry_point)]
