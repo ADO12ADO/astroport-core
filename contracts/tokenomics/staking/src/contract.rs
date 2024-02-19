@@ -30,7 +30,7 @@ const INSTANTIATE_TOKEN_REPLY_ID: u64 = 1;
 
 /// Minimum initial xastro share
 pub(crate) const MINIMUM_STAKE_AMOUNT: Uint128 = Uint128::new(1_000);
-
+// Bagian 2: Fungsi instantiate dan beberapa fungsi lainnya
 /// Creates a new contract with the specified parameters in the [`InstantiateMsg`].
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -77,8 +77,7 @@ pub fn instantiate(
 
     Ok(Response::new().add_submessages(sub_msg))
 }
-
-// ... (lanjutan ke Bagian 2)
+// Bagian 3: Fungsi execute dan reply
 /// Exposes execute functions available in the contract.
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
@@ -95,9 +94,6 @@ pub fn execute(
     }
 }
 
-
-
-/// The entry point to the contract for processing replies from submessages.
 /// The entry point to the contract for processing replies from submessages.
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
@@ -127,30 +123,32 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
         _ => Err(ContractError::FailedToParseReply {}),
     }
 }
+// Bagian 4: Fungsi update_deposit_token_addr, receive_cw20, query, dan migrate
 /// Updates the deposit token address.
-
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn update_deposit_token_addr(
     deps: DepsMut,
     env: Env,
-    _info: MessageInfo,
+    info: MessageInfo,
     new_deposit_token_addr: String,
 ) -> StdResult<Response> {
     let mut config = CONFIG.load(deps.storage)?;
 
     // Only the owner is allowed to update the deposit token address
-    if config.owner != env.message.sender {
+    if config.owner != info.sender {
         return Err(ContractError::Unauthorized {});
     }
 
-    config.deposit_token_addr = deps.api.addr_validate(&new_deposit_token_addr)?;
+    config.astro_token_addr = deps.api.addr_validate(&new_deposit_token_addr)?;
 
     CONFIG.save(deps.storage, &config)?;
 
     Ok(Response::new())
 }
 
-// ... (other parts of your code)
+// ... (Fungsi lainnya seperti receive_cw20, query, migrate)
+// ... (lanjutan dari Bagian 4)
+
 /// Receives a message of type [`Cw20ReceiveMsg`] and processes it depending on the received template.
 ///
 /// * **cw20_msg** CW20 message to process.
@@ -220,7 +218,7 @@ fn receive_cw20(
                 amount
             };
 
-                        messages.push(wasm_execute(
+            messages.push(wasm_execute(
                 config.xastro_token_addr.clone(),
                 &Cw20ExecuteMsg::Mint {
                     recipient: recipient.clone(),
@@ -270,6 +268,7 @@ fn receive_cw20(
         }
     }
 }
+// ... (lanjutan dari Bagian 5)
 
 /// Exposes all the queries available in the contract.
 ///
@@ -297,6 +296,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         )?),
     }
 }
+// ... (lanjutan dari Bagian 6)
 
 /// ## Description
 /// Used for migration of contract. Returns the default object of type [`Response`].
