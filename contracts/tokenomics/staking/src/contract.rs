@@ -118,6 +118,7 @@ pub fn update_deposit_token_addr(
 }
 
 /// The entry point to the contract for processing replies from submessages.
+/// The entry point to the contract for processing replies from submessages.
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
     match msg {
@@ -147,8 +148,9 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
     }
 }
 
-// ... (lanjutan ke Bagian 3)
-// Receives a message of type [`Cw20ReceiveMsg`] and processes it depending on the received template.
+/// Receives a message of type [`Cw20ReceiveMsg`] and processes it depending on the received template.
+///
+/// * **cw20_msg** CW20 message to process.
 fn receive_cw20(
     deps: DepsMut,
     env: Env,
@@ -167,8 +169,14 @@ fn receive_cw20(
     )?;
     let total_shares = query_supply(&deps.querier, &config.xastro_token_addr)?;
 
-    match from_json(&cw20_msg.msg)? {
+    match from_binary(&cw20_msg.msg)? {
         Cw20HookMsg::Enter {} => {
+            // Check if the deposit exceeds the overall limit
+            let new_total_deposit = total_deposit + amount;
+            if new_total_deposit > Uint128::new(21_000_000_000_000) {
+                return Err(ContractError::ExceedsOverallDepositLimit {});
+            }
+
             let mut messages = vec![];
             if info.sender != config.astro_token_addr {
                 return Err(ContractError::Unauthorized {});
@@ -209,8 +217,8 @@ fn receive_cw20(
                 amount
             };
 
-            messages.push(wasm_execute(
-                config.xastro_token_addr,
+                        messages.push(wasm_execute(
+                config.xastro_token_addr.clone(),
                 &Cw20ExecuteMsg::Mint {
                     recipient: recipient.clone(),
                     amount: mint_amount,
@@ -238,12 +246,12 @@ fn receive_cw20(
             let res = Response::new()
                 .add_message(CosmosMsg::Wasm(WasmMsg::Execute {
                     contract_addr: config.xastro_token_addr.to_string(),
-                    msg: to_json_binary(&Cw20ExecuteMsg::Burn { amount })?,
+                    msg: to_binary(&Cw20ExecuteMsg::Burn { amount })?,
                     funds: vec![],
                 }))
                 .add_message(CosmosMsg::Wasm(WasmMsg::Execute {
                     contract_addr: config.astro_token_addr.to_string(),
-                    msg: to_json_binary(&Cw20ExecuteMsg::Transfer {
+                    msg: to_binary(&Cw20ExecuteMsg::Transfer {
                         recipient: recipient.clone(),
                         amount: what,
                     })?,
@@ -260,20 +268,26 @@ fn receive_cw20(
     }
 }
 
-// ... (lanjutan ke Bagian 4)
 /// Exposes all the queries available in the contract.
+///
+/// ## Queries
+/// * **QueryMsg::Config {}** Returns the staking contract configuration using a [`ConfigResponse`] object.
+///
+/// * **QueryMsg::TotalShares {}** Returns the total ITO supply using a [`Uint128`] object.
+///
+/// * **QueryMsg::Config {}** Returns the amount of ASTRO that's currently in the staking pool using a [`Uint128`] object.
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     let config = CONFIG.load(deps.storage)?;
     match msg {
-        QueryMsg::Config {} => Ok(to_json_binary(&ConfigResponse {
+        QueryMsg::Config {} => Ok(to_binary(&ConfigResponse {
             deposit_token_addr: config.astro_token_addr,
             share_token_addr: config.xastro_token_addr,
         })?),
         QueryMsg::TotalShares {} => {
-            to_json_binary(&query_supply(&deps.querier, &config.xastro_token_addr)?)
+            to_binary(&query_supply(&deps.querier, &config.xastro_token_addr)?)
         }
-        QueryMsg::TotalDeposit {} => to_json_binary(&query_token_balance(
+        QueryMsg::TotalDeposit {} => to_binary(&query_token_balance(
             &deps.querier,
             &config.astro_token_addr,
             env.contract.address,
@@ -294,8 +308,8 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
     let contract_version = get_contract_version(deps.storage)?;
 
     match contract_version.contract.as_ref() {
-        "astroport-staking" => match contract_version.version.as_ref() {
-            "1.0.0" | "1.0.1" | "1.0.2" => {}
+        "ito-staking" => match contract_version.version.as_ref() {
+            "1.1.0" | "1.0.1" | "1.0.2" => {}
             _ => return Err(ContractError::MigrationError {}),
         },
         _ => return Err(ContractError::MigrationError {}),
