@@ -69,7 +69,7 @@ pub fn instantiate(
             marketing: msg.marketing,
         })?,
         funds: vec![],
-        label: String::from("Staked Astroport Token"),
+        label: String::from("Staked Ito Token"),
     }
     .into_submsg()
     .id(INSTANTIATE_TOKEN_REPLY_ID)
